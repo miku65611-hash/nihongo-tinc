@@ -1,0 +1,10 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="110" fill="#101827"/>
+  <rect x="35" y="35" width="442" height="442" rx="90"
+        fill="#1c2a3d" stroke="#62d6ff" stroke-width="12"/>
+  <text x="256" y="235" font-size="125" font-weight="bold"
+        text-anchor="middle" fill="#62d6ff">日</text>
+  <text x="256" y="340" font-size="70" font-weight="bold"
+        text-anchor="middle" fill="white">TIN.C</text>
+</svg>

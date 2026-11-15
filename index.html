@@ -1,0 +1,246 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101827">
+<link rel="manifest" href="./manifest.json">
+<title>Nihongo Tin.c</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;padding:20px;
+  background:#101827;color:white;
+  font-family:Arial,sans-serif
+}
+header{text-align:center;margin:15px 0 25px}
+header h1{color:#62d6ff;margin-bottom:5px}
+nav{display:flex;gap:7px;flex-wrap:wrap}
+button{
+  background:#29425f;color:white;
+  border:0;border-radius:9px;
+  padding:12px;margin:4px;
+  font-weight:bold
+}
+button:active{opacity:.7}
+.panel{
+  background:#1c2a3d;padding:18px;
+  border-radius:14px;margin-top:17px
+}
+.hidden{display:none}
+.big{text-align:center;font-size:40px;margin:25px 0}
+input{
+  width:100%;padding:13px;margin:7px 0;
+  border:0;border-radius:8px
+}
+.item{
+  background:#263b55;padding:12px;
+  border-radius:9px;margin:8px 0
+}
+.primary{background:#087ea4}
+.small{font-size:13px;color:#aabbd0}
+</style>
+</head>
+<body>
+
+<header>
+<h1>NIHONGO TIN.C</h1>
+<p class="small">Your Japanese Learning Companion 🇯🇵</p>
+</header>
+
+<nav>
+<button onclick="showTab('flash')">📚 Flashcard</button>
+<button onclick="showTab('quiz')">📝 Quiz</button>
+<button onclick="showTab('manager')">➕ Từ vựng</button>
+</nav>
+
+<section id="flash" class="panel">
+<h2>Flashcard</h2>
+<div class="big" id="kanji"></div>
+<h3 id="reading"></h3>
+<p id="meaning"></p>
+<p id="example"></p>
+<button class="primary" onclick="nextWord()">Từ tiếp theo →</button>
+</section>
+
+<section id="quiz" class="panel hidden">
+<h2>Kiểm tra từ vựng</h2>
+<p id="question"></p>
+<div id="answers"></div>
+<p id="result"></p>
+<button onclick="showQuiz()">Câu tiếp theo</button>
+</section>
+
+<section id="manager" class="panel hidden">
+<h2>Quản lý từ vựng</h2>
+<input id="newK" placeholder="Kanji / Từ vựng">
+<input id="newR" placeholder="Hiragana">
+<input id="newM" placeholder="Nghĩa tiếng Việt">
+<input id="newE" placeholder="Ví dụ tiếng Nhật">
+<button class="primary" onclick="addWord()">Lưu từ mới</button>
+<h3>Danh sách từ vựng</h3>
+<div id="wordList"></div>
+</section>
+
+<footer class="small" style="text-align:center;margin-top:30px">
+NIHONGO TIN.C • OFFLINE LEARNING
+</footer>
+
+<script>
+const defaults=[
+{k:"努力",r:"どりょく",m:"Nỗ lực",e:"毎日努力しています。"},
+{k:"信用",r:"しんよう",m:"Tin tưởng",e:"彼を信用しています。"},
+{k:"予防",r:"よぼう",m:"Phòng ngừa",e:"病気を予防する。"},
+{k:"一般",r:"いっぱん",m:"Thông thường",e:"一般的な考え方です。"},
+{k:"連続",r:"れんぞく",m:"Liên tục",e:"三日連続で勉強した。"},
+{k:"活気",r:"かっき",m:"Sự sôi động",e:"活気のある町です。"},
+{k:"展開",r:"てんかい",m:"Triển khai",e:"物語が展開する。"},
+{k:"制作",r:"せいさく",m:"Sản xuất",e:"映画を制作する。"}
+];
+
+let words=JSON.parse(localStorage.getItem("tinWords")||"null")||defaults;
+let index=0,quizIndex=0,answered=false;
+
+function save(){
+ localStorage.setItem("tinWords",JSON.stringify(words));
+}
+
+function showTab(name){
+ ["flash","quiz","manager"].forEach(id=>
+ document.getElementById(id).classList.add("hidden"));
+ document.getElementById(name).classList.remove("hidden");
+ if(name==="manager")renderWords();
+ if(name==="quiz")showQuiz();
+}
+
+function showWord(){
+ if(!words.length){
+ kanji.textContent="Chưa có từ vựng";
+ reading.textContent="";
+ meaning.textContent="";
+ example.textContent="";
+ return;
+ }
+ if(index>=words.length)index=0;
+ const w=words[index];
+ kanji.textContent=w.k;
+ reading.textContent=w.r;
+ meaning.textContent=w.m;
+ example.textContent=w.e;
+}
+
+function nextWord(){
+ if(!words.length)return;
+ index=(index+1)%words.length;
+ showWord();
+}
+
+function addWord(){
+ const w={
+ k:newK.value.trim(),
+ r:newR.value.trim(),
+ m:newM.value.trim(),
+ e:newE.value.trim()
+ };
+ if(!w.k||!w.r||!w.m){
+ alert("Hãy nhập từ, cách đọc và nghĩa!");
+ return;
+ }
+ words.push(w);
+ save();
+ newK.value="";newR.value="";
+ newM.value="";newE.value="";
+ renderWords();
+ alert("Đã lưu từ mới!");
+}
+
+function renderWords(){
+ wordList.innerHTML="";
+ words.forEach((w,i)=>{
+ const div=document.createElement("div");
+ div.className="item";
+ const title=document.createElement("b");
+ title.textContent=w.k+" ("+w.r+")";
+ const desc=document.createElement("p");
+ desc.textContent=w.m;
+ const edit=document.createElement("button");
+ edit.textContent="Sửa";
+ edit.onclick=()=>editWord(i);
+ const del=document.createElement("button");
+ del.textContent="Xóa";
+ del.onclick=()=>deleteWord(i);
+ div.append(title,desc,edit,del);
+ wordList.appendChild(div);
+ });
+}
+
+function editWord(i){
+ const w=words[i];
+ const k=prompt("Từ vựng:",w.k);
+ if(k===null)return;
+ const r=prompt("Hiragana:",w.r);
+ if(r===null)return;
+ const m=prompt("Nghĩa:",w.m);
+ if(m===null)return;
+ const e=prompt("Ví dụ:",w.e);
+ if(e===null)return;
+ if(!k.trim()||!r.trim()||!m.trim()){
+ alert("Không được để trống!");
+ return;
+ }
+ words[i]={k:k.trim(),r:r.trim(),m:m.trim(),e:e.trim()};
+ save();renderWords();showWord();
+}
+
+function deleteWord(i){
+ if(confirm("Bạn muốn xóa từ này?")){
+ words.splice(i,1);
+ index=0;save();renderWords();showWord();
+ }
+}
+
+function showQuiz(){
+ if(!words.length){
+ question.textContent="Chưa có từ vựng!";
+ answers.innerHTML="";
+ return;
+ }
+ answered=false;
+ const w=words[quizIndex%words.length];
+ question.textContent="「"+w.k+"」 có nghĩa là gì?";
+ result.textContent="";
+ answers.innerHTML="";
+ const choices=[w.m];
+ const others=words.filter(x=>x.m!==w.m);
+ while(choices.length<3&&others.length){
+ const pick=others.splice(Math.floor(Math.random()*others.length),1)[0];
+ choices.push(pick.m);
+ }
+ choices.sort(()=>Math.random()-.5);
+ choices.forEach(choice=>{
+ const b=document.createElement("button");
+ b.textContent=choice;
+ b.style.display="block";
+ b.style.width="100%";
+ b.onclick=()=>{
+ if(answered)return;
+ answered=true;
+ result.textContent=choice===w.m?"✅ Chính xác!":"❌ Đáp án: "+w.m;
+ };
+ answers.appendChild(b);
+ });
+ quizIndex++;
+}
+
+showWord();
+
+if("serviceWorker" in navigator){
+ window.addEventListener("load",()=>{
+ navigator.serviceWorker.register("./sw.js")
+ .catch(err=>console.log("SW error:",err));
+ });
+}
+</script>
+</body>
+</html>
